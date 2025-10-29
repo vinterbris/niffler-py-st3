@@ -1,15 +1,14 @@
+import allure_commons
 import pytest
 from selene import browser, support, Browser
 from selenium import webdriver
-import requests
 
+import project
 from niffler_tests.application import app
 from niffler_tests.data.spendings import amount, currency_usd, category, date_type_1, description, category_edit, \
     amount_edit, currency_rub, description_edit
 from niffler_tests.data.user import login_admin, password_admin
 from niffler_tests.utils import attach, supported_browsers
-import allure_commons
-import project
 
 
 @pytest.fixture(scope='session', autouse=True)
