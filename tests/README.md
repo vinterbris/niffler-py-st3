@@ -3,6 +3,7 @@
 ```bash
 poetry env use python3
 poetry install
+poetry 
 ```
 2. Запустить niffler:
 

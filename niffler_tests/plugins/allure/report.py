@@ -11,7 +11,7 @@ from allure_commons.utils import uuid4, represent
 
 
 def _humanify(string_with_underscores, /):
-    return re.sub(r'_+', ' ', string_with_underscores).strip()
+    return re.sub(r"_+", " ", string_with_underscores).strip()
 
 
 def _fn_params_to_ordered_dict(func, *args, **kwargs):
@@ -20,7 +20,7 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
     # given pos_or_named = list of pos_only args and pos_or_named/standard args
     pos_or_named_ordered_names = list(spec.args)
     pos_without_defaults_dict = dict(zip(spec.args, args))
-    if spec.args and spec.args[0] in ['cls', 'self']:
+    if spec.args and spec.args[0] in ["cls", "self"]:
         pos_without_defaults_dict.pop(spec.args[0], None)
 
     received_args_amount = len(args)
@@ -58,7 +58,7 @@ def _fn_params_to_ordered_dict(func, *args, **kwargs):
 def step(
     title_or_callable=None,
     display_params=True,
-    params_separator=', ',
+    params_separator=", ",
     derepresent_params=False,
     display_context=True,
     translations=(),
@@ -89,18 +89,17 @@ def step(
 
 
 class StepContext:
-
     def __init__(
         self,
         title,
         params,
         display_params=True,
-        params_separator=', ',
+        params_separator=", ",
         derepresent_params=False,
         display_context=True,
         translations=(
-            (':--(', ':--)'),
-            (':--/', ':--D'),
+            (":--(", ":--)"),
+            (":--/", ":--D"),
         ),
     ):
         self.maybe_title = title
@@ -114,13 +113,13 @@ class StepContext:
 
     def __enter__(self):
         plugin_manager.hook.start_step(
-            uuid=self.uuid, title=self.maybe_title or '', params=self.params
+            uuid=self.uuid, title=self.maybe_title or "", params=self.params
         )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         plugin_manager.hook.stop_step(
             uuid=self.uuid,
-            title=self.maybe_title or '',
+            title=self.maybe_title or "",
             exc_type=exc_type,
             exc_val=exc_val,
             exc_tb=exc_tb,
@@ -137,14 +136,16 @@ class StepContext:
             def described(item):
                 (name, value) = item
                 spec = inspect.getfullargspec(func)
-                is_pos_or_named_passed_as_arg = name in dict(zip(spec.args, args)).keys()
+                is_pos_or_named_passed_as_arg = (
+                    name in dict(zip(spec.args, args)).keys()
+                )
                 # has_defaults = spec.defaults or spec.kwonlydefaults
                 # is_pos_or_named_passed_as_kwarg = \
                 #     name in etc.list_intersection(spec.args, list(kw.keys()))
                 return (
                     str(value)
                     if is_pos_or_named_passed_as_arg
-                    else f'{_humanify(name)} {value}'
+                    else f"{_humanify(name)} {value}"
                 )
 
             params = list(map(described, list(params_dict.items())))
@@ -162,44 +163,44 @@ class StepContext:
 
             def params_to_display():
                 if not params_values:
-                    return ''
+                    return ""
                 was_fn_called_with_some_args = args or kw
                 if len(params_values) == 1 and was_fn_called_with_some_args:
                     item = next(iter(params_dict.items()))
                     if item[0] in kw.keys():
-                        return f' {item[0]} {item[1]}'
+                        return f" {item[0]} {item[1]}"
                     else:
-                        return ' ' + params_values[0]
-                return (': ' if title_to_display() else '') + params_string
+                        return " " + params_values[0]
+                return (": " if title_to_display() else "") + params_string
 
             def context():
                 # todo: refactor naming and make idiomatic
                 def is_method(fn):
                     spec = inspect.getfullargspec(fn)
-                    return args and spec.args and spec.args[0] in ['cls', 'self']
+                    return args and spec.args and spec.args[0] in ["cls", "self"]
 
                 maybe_module_name = (
-                    func.__module__.split('.')[-1] if not is_method(func) else None
+                    func.__module__.split(".")[-1] if not is_method(func) else None
                 )
 
                 instance = args[0] if is_method(func) else None
                 instance_desc = str(instance)
                 maybe_instance_name = (
-                    instance_desc if 'at 0x' not in instance_desc else None
+                    instance_desc if "at 0x" not in instance_desc else None
                 )
                 class_name = instance and instance.__class__.__name__
 
                 context_name = maybe_module_name or maybe_instance_name or class_name
 
                 if not context_name:
-                    return ''
+                    return ""
 
-                return f' [{context_name}]'  # todo: make ` [...]` configurable;)
+                return f" [{context_name}]"  # todo: make ` [...]` configurable;)
 
             name_to_display = (
                 title_to_display()
-                + (params_to_display() if self.display_params else '')
-                + (context() if self.display_context else '')
+                + (params_to_display() if self.display_params else "")
+                + (context() if self.display_context else "")
             )
 
             translated_name = (

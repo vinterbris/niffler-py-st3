@@ -1,3 +1,6 @@
+import time
+
+import allure
 import allure_commons
 import pytest
 from selene import browser, support, Browser
@@ -5,13 +8,15 @@ from selenium import webdriver
 
 import project
 from niffler_tests.application import app
-from niffler_tests.data.spendings import amount, currency_usd, category, date_type_1, description, category_edit, \
-    amount_edit, currency_rub, description_edit
+from niffler_tests.clients.auth import AuthHttpClient
+from niffler_tests.clients.spends_client import SpendsHttpClient
 from niffler_tests.data.user import login_admin, password_admin
 from niffler_tests.utils import attach, supported_browsers
+from project import config
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
+@allure.step('Добавление allure.step для шагов selene')
 def add_reporting_to_selene_steps():
     """
     Code from https://github.com/yashaka/python-web-test
@@ -28,7 +33,7 @@ def add_reporting_to_selene_steps():
 
         return report.step(original_open)(self, relative_or_absolute_url)
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def browser_management():
     browser.config.base_url = project.config.base_url
     browser.config.timeout = project.config.timeout
@@ -48,16 +53,16 @@ def browser_management():
         options = webdriver.FirefoxOptions()
 
     if project.config.headless:
-        options.add_argument('--headless=new')
+        options.add_argument("--headless=new")
 
-    options.page_load_strategy = 'eager'
+    options.page_load_strategy = "eager"
 
     if project.config.selenoid:
         options.add_argument("--disable-infobars")
         options.add_argument("--disable-extensions")
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-application-cache')
-        options.add_argument('--disable-gpu')
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-application-cache")
+        options.add_argument("--disable-gpu")
         options.add_argument("--disable-dev-shm-usage")
         selenoid_capabilities = {
             "browserName": project.config.browser_name,
@@ -69,7 +74,7 @@ def browser_management():
         options.capabilities.update(selenoid_capabilities)
 
         driver = webdriver.Remote(
-            command_executor=project.config.selenoid_url + '/wd/hub', options=options
+            command_executor=project.config.selenoid_url + "/wd/hub", options=options
         )
 
         browser.config.driver = driver
@@ -84,33 +89,70 @@ def browser_management():
 
     browser.quit()
 
-@pytest.fixture
+@pytest.fixture()
 def add_admin():
     app.login_page.open()
     app.login_page.create_new_account()
     app.registration_page.sign_up(login_admin, password_admin)
 
-@pytest.fixture
-def spending_setup():
-    app.login_page.login(login_admin, password_admin)
-    app.add_spending(amount, currency_usd, category, date_type_1, description)
 
-    yield
-
-    app.main_page.delete_all_transactions()
-
-@pytest.fixture
-def double_spending_setup():
-    app.login_page.login(login_admin, password_admin)
-    app.add_spending(amount, currency_usd, category, date_type_1, description)
-    app.add_spending(amount_edit, currency_rub, category_edit, date_type_1, description_edit)
-
-    yield
-
-    app.main_page.delete_all_transactions()
-
-@pytest.fixture
+@pytest.fixture()
 def spending_cleanup():
     yield
 
-    app.main_page.delete_all_transactions()
+    app.main_page.delete_all_spendings()
+
+@pytest.fixture()
+def auth():
+    app.login_page.login(config.user_login, config.user_password)
+    time.sleep(1)
+    token = browser.driver.execute_script('return localStorage.getItem("id_token")')
+    if token:
+        return token
+    else:
+        raise Exception("Failed to fetch token")
+
+
+@pytest.fixture()
+def spends_client(auth) -> SpendsHttpClient:
+    return SpendsHttpClient(config.gateway_url, auth)
+
+@pytest.fixture()
+def auth_client() -> AuthHttpClient:
+    return AuthHttpClient(config.auth_url)
+
+# @pytest.fixture()
+# def api_login(auth_client):
+#     result = auth_client.log_in(config.user_login, config.user_password)
+#     print(result)
+
+@pytest.fixture(params=[], scope="function")
+def s_category(request, spends_client):
+    category_name = request.param
+    current_categories = spends_client.get_categories()
+    list_of_categories = [category["name"] for category in current_categories]
+    if category_name not in list_of_categories:
+        spends_client.add_category(category_name)
+    return category_name
+
+@pytest.fixture(params=[], scope="function")
+def spends(request, spends_client):
+    """
+    Recieves list of spendings
+    """
+    list_of_spendings = []
+    for spending in request.param:
+        transaction = spends_client.add_spend(spending)
+        list_of_spendings.append(transaction)
+
+    yield list_of_spendings
+
+    for spending in list_of_spendings:
+        try:
+            spends_client.remove_spend([spending["id"]])
+        except Exception:
+            pass
+
+@pytest.fixture()
+def o_main_page(auth):
+    browser.open('/')

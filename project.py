@@ -7,8 +7,16 @@ from niffler_tests.utils import supported_browsers
 
 
 class Config(pydantic_settings.BaseSettings):
-    base_url: str = 'http://frontend.niffler.dc'
-    timeout: float = 2.0
+    """
+    Automatically loads values from .env for corresponding fields
+    """
+    base_url: str = None
+    auth_url: str = None
+    gateway_url: str = None
+    user_login: str = None
+    user_password: str = None
+
+    timeout: float = 5.0
     browser_name: supported_browsers.BrowserName = 'chrome'
     headless: bool = False
     window_width: int = 1600
@@ -31,6 +39,6 @@ config = Config(_env_file=dotenv.find_dotenv())
 
 if __name__ == '__main__':
     """
-    Run python3 config.py to check config values on start. Used for debugging
+    Run python3 project.py to check config values on start. Used for debugging
     """
     print(config.__repr__())
