@@ -18,7 +18,10 @@ dependencies = [
     "allure-pytest (==2.15.0)",
     "curlify (==3.0.0)",
     "ruff (==0.14.2)",
-    "pytest-rerunfailures (==16.1)"
+    "pytest-rerunfailures (==16.1)",
+    "psycopg2-binary (==2.9.11)",
+    "sqlalchemy (==2.0.44)",
+    "sqlmodel (==0.0.27)"
 ]
 
 
